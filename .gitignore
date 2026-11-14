@@ -1,0 +1,17 @@
+# 运行时数据不进仓库
+compose/data/
+compose/qbittorrent/
+compose/emby/
+compose/media/
+compose/downloads/
+compose/.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 插件打包产物
+*.mcplugin
+dist/

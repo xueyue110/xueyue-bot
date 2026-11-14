@@ -1,0 +1,71 @@
+name: movieclaw-kit
+
+# MovieClaw + qBittorrent（PT 下载）+ Emby（可选，读 STRM）
+# 115 网盘不在这里起容器：走 MovieClaw 官方插件（cloud-115 / p115-import / p115-library），
+# 不需要 CloudDrive2 挂载，也不需要额外账号服务。
+#
+# 用法：
+#   cp .env.example .env    # 按需改 TZ / 目录 / 端口
+#   docker compose --profile emby up -d
+#
+# 不用 Emby 时去掉 --profile emby，只起 movieclaw + qbittorrent。
+
+services:
+  movieclaw:
+    image: movieclaw/movieclaw:${MOVIECLAW_TAG:-latest}
+    container_name: movieclaw
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${MC_PORT:-3000}:3000"
+      # 局域网自动发现：各端 App 与 Jellyfin 协议播放器靠它找到服务器
+      - "7359:7359/udp"
+    volumes:
+      - ./data:/app/data
+      - "${MEDIA_DIR:-./media}:/media"
+      - "${DOWNLOAD_DIR:-./downloads}:/downloads"
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:${QB_TAG:-latest}
+    container_name: qbittorrent
+    restart: unless-stopped
+    depends_on:
+      movieclaw:
+        condition: service_started
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-Asia/Shanghai}
+      - WEBUI_PORT=8080
+    volumes:
+      - ./qbittorrent/config:/config
+      - "${DOWNLOAD_DIR:-./downloads}:/downloads"
+      - "${MEDIA_DIR:-./media}:/media"
+    ports:
+      - "${QB_PORT:-8080}:8080"
+      - "6881:6881"
+      - "6881:6881/udp"
+
+  # 可选：Emby 只读 STRM 库（p115-library 生成 .strm 到 $MEDIA_DIR/strm）
+  emby:
+    image: emby/embyserver:${EMBY_TAG:-latest}
+    container_name: emby
+    profiles: ["emby"]
+    restart: unless-stopped
+    environment:
+      - UID=${PUID:-1000}
+      - GID=${PGID:-1000}
+      - TZ=${TZ:-Asia/Shanghai}
+    volumes:
+      - ./emby/config:/config
+      - "${MEDIA_DIR:-./media}:/media"
+    ports:
+      - "${EMBY_PORT:-8096}:8096"
