@@ -1,0 +1,15 @@
+[plugin]
+id = "p115-download"
+title = "115 云下载"
+version = "0.1.0"
+entry = "p115_download"
+runtime = "process"
+sdk = "^1.0"
+description = "把 115 云下载（离线）接成 MovieClaw 的下载器类型 p115：磁力 / ed2k 直接投给 115，完成后由 p115-library 生成 STRM 给 Emby；PT 资源继续走 qBittorrent。"
+
+[requires]
+"downloader-adapters" = "^1.0"
+
+[permissions]
+operations = []
+network = true

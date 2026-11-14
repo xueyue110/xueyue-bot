@@ -125,6 +125,25 @@ MovieClaw → **媒体库 → 新建**：
 
 ---
 
+## 7.5 可选：订阅自动投 115（自研 p115-download）
+
+如果你想让**订阅命中后自动把磁力/ed2k 投给 115**（不再手动粘），装本仓库的插件：
+
+1. 打包：Windows 上 `Set-ExecutionPolicy -Scope Process Bypass` 后执行
+   `scripts\build-plugin.ps1`，得到 `plugins/p115-download/dist/p115-download-0.1.0.mcplugin`
+2. MovieClaw → 设置 → 插件 → **手动上传**该文件 → 批准权限
+3. 设置 → 下载器 → 添加：
+   - 类型：`115 云下载`
+   - 占位地址：`local`
+   - 密码：115 Cookie（`UID=…; CID=…; SEID=…; KID=…`）
+4. 保存路径用 `/media/115/<网盘目录>`，例如 `/media/115/电影`，插件会把它映射到 115 网盘的 `/电影`
+5. 订阅/手动下载时选这个下载器；**PT 种子仍选 qBittorrent**（私有站 115 取不到 peer）
+
+> 该插件逻辑已用假 115 后端测试通过，但**未在真实 115 账号联调**。上线前先手动跑一次
+> 「加磁力 → 完成 → STRM 出现」验证；遇到接口变动到 `plugins/p115-download/README.md` 看排查点。
+
+---
+
 ## 8. Emby 接 STRM
 
 Emby → 添加媒体库 → 路径选 `/media/strm/电影`、`/media/strm/剧集`。

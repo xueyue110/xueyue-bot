@@ -51,6 +51,7 @@ docker compose --profile emby up -d
 | `p115-library` | 115 目录 → STRM（增量同步、剧集直链预取、NFO/图片/字幕跟随） |
 | `cloud-115` | 115 作为存储后端：扫码登录、秒传、直链、回收站 |
 | `qbittorrent-downloader` | PT 下载（主程序随带） |
+| **`p115-download`（本仓库自研）** | 下载器类型 `p115`：订阅命中后磁力/ed2k 直接投 115 云下载，PT 继续走 qBittorrent；见 [plugins/p115-download](plugins/p115-download) |
 
 ## 许可
 

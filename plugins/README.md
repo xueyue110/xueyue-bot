@@ -2,24 +2,35 @@
 
 本目录放自研插件（与官方 movieclaw-plugins 分开维护，避免上游更新冲突）。
 
-## p115-download（进行中）
+## p115-download v0.1.0
 
 **目标**：给 MovieClaw 注册一个下载器类型 `p115`，让订阅命中后把磁力/ed2k
 直接投给 115 云下载（离线），完成后文件出现在 115 网盘，由 p115-library
 生成 STRM 给 Emby —— 即 mediary+flowlink 的「订阅 → 115 → STRM」自动链路，
 同时保留 qBittorrent 走 PT。
 
-**已定的设计**
+**实现**
 
-- 实现 `movieclaw_sdk.downloaders.BaseDownloader`，进程外运行（runtime = process）
-- 登录：插件自带扫码页（Cookie 存插件数据）
-- `submit(magnet|ed2k)` → `POST https://clouddownload.115.com/web/?ac=add_task_urls`
-- `submit(torrent_bytes)` → 算 info_hash → `ac=add_task_bt`（115 能认的公开种；PT 私有种秒传不了，提示交给 qBittorrent）
-- `get_torrent` → `ac=get_user_task` + 任务列表，映射 progress/状态/文件
-- `set_location`/选择性下载：115 离线不支持，明确报 `DownloaderNotSupportedError`
-- 保存目录：本地路径前缀 ↔ 115 目录 cid 的映射表（插件设置里配）
+- 实现 `movieclaw_sdk.downloaders.BaseDownloader`，进程外运行，类型 `p115`
+- 登录：下载器配置的「密码」栏填 115 Cookie（`UID=…; CID=…; SEID=…; KID=…`）
+- `submit(magnet/ed2k)` → `clouddownload.115.com/web/?ac=add_task_urls`
+- `submit(torrent_bytes)` → 本地算 info_hash → `ac=add_task_bt`（私有站取不到 peer 会失败，PT 请走 qBittorrent）
+- `get_torrent` / `list_torrents` → 115 任务查询，映射进度、状态、文件清单
+- 保存目录约定：本地 `/media/115/**` ↔ 115 网盘同名路径，缺目录自动创建
+- `set_location` / 选择性下载：115 离线不支持，明确报 `DownloaderNotSupportedError`
+- 115 限流/失效/网络错误分别映射成 MovieClaw 的 `DownloaderConnectError` / `DownloaderAuthError`
 
-**状态**：脚手架与测试进行中，未在真账号验证；先别给生产环境用。
+**测试**：`plugins/p115-download/tests`，19 个用例全绿，用 `httpx.MockTransport`
+模拟 115（`tests/fake115.py`），不连网、不用账号。覆盖 Cookie 缺失/失效、限流、
+磁力/ed2k/种子提交、目录映射与建目录、进度与完成、列表、删除幂等、不支持操作。
 
-**为什么需要它**：官方 `p115-import` 只支持手动粘链接；`p115-library` 只做
-STRM 同步。订阅自动投 115 这一段官方没有现成实现。
+**打包/安装**：`scripts/build-plugin.ps1` → `plugins/p115-download/dist/p115-download-0.1.0.mcplugin`，
+在 MovieClaw → 设置 → 插件 → 手动上传。
+
+**已知边界**
+
+- 未在真实 115 账号上联调（当前环境无账号）。接口路径取自 p115client（MIT），
+  网页接口可能要求 sign/time，客户端按需补充；真实账号首次使用请先做一次
+  「加任务 → 完成 → STRM 出现」的全流程验证。
+- 不处理 115 分享链接（分享转存由官方 `p115-import` 插件的页面负责）。
+- 115 云下载没有全局限速/队列，相关接口静默忽略。
