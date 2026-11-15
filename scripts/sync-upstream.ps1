@@ -29,7 +29,7 @@ $LogFile  = Join-Path $RepoRoot 'docs/UPSTREAM-LOG.md'
 function Write-Step([string]$Msg) { Write-Host "==> $Msg" -ForegroundColor Cyan }
 
 function Get-LatestRelease {
-  $headers = @{ 'User-Agent' = 'movieclaw-kit-sync'; 'Accept' = 'application/vnd.github+json' }
+  $headers = @{ 'User-Agent' = 'xueyue-bot-sync'; 'Accept' = 'application/vnd.github+json' }
   if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "Bearer $($env:GITHUB_TOKEN)" }
   try {
     $r = Invoke-RestMethod -Uri 'https://api.github.com/repos/movieclaw/movieclaw/releases/latest' -Headers $headers -TimeoutSec 25
@@ -72,7 +72,7 @@ if ($current -eq $tag -and -not $Force) {
 Write-Step "确认 Docker Hub 上存在 movieclaw/movieclaw:$tag ..."
 try {
   $null = Invoke-RestMethod -Uri "https://hub.docker.com/v2/repositories/movieclaw/movieclaw/tags/$tag" `
-          -Headers @{ 'User-Agent' = 'movieclaw-kit-sync' } -TimeoutSec 25
+          -Headers @{ 'User-Agent' = 'xueyue-bot-sync' } -TimeoutSec 25
   Write-Host '镜像 tag 存在。'
 } catch {
   Write-Warning "Docker Hub 上找不到该 tag（Release 的镜像可能还在构建），本次跳过，稍后重试。"

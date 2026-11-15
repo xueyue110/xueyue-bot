@@ -1,4 +1,4 @@
-name: movieclaw-kit
+name: xueyue-bot
 
 # MovieClaw + qBittorrent（PT 下载）+ Emby（可选，读 STRM）
 # 115 网盘不在这里起容器：走 MovieClaw 官方插件（cloud-115 / p115-import / p115-library），

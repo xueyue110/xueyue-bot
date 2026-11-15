@@ -1,4 +1,4 @@
-# movieclaw-kit
+# xueyue-bot
 
 基于 [MovieClaw](https://github.com/movieclaw/movieclaw) 的一体化影音方案，目标是复刻
 「mediary + flowlink + Emby」那套玩法：

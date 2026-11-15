@@ -1,7 +1,7 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-  movieclaw-kit 状态速查：容器状态、当前固定版本、健康检查、115/Emby 端口。
+  xueyue-bot 状态速查：容器状态、当前固定版本、健康检查、115/Emby 端口。
 
 .EXAMPLE
   .\scripts\status.ps1
