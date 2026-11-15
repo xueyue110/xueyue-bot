@@ -62,6 +62,23 @@ Emby → 添加媒体库 → 路径 `/media/strm/电影`、`/media/strm/剧集`�
 因为 p115-library 把 `movie.nfo`、`poster.jpg`、分集剧照、外挂字幕都同步到了 STRM 目录，
 Emby 直接读本地元数据，不用重复在线刮削（想用在线刮削也行，关掉 NFO 同步即可）。
 
+## 为什么这条路线不需要自研插件
+
+逐项对照过官方插件的能力（源码位置写在表里）：
+
+| 步骤 | 由谁提供 | 证据 |
+|---|---|---|
+| PT 订阅、qBittorrent 下载 | 主程序 + 随带 `qbittorrent-downloader` | `src/movieclaw_plugins/qbittorrent` |
+| 识别、刮削、硬链接进库 | 主程序监听导入 | `services/library/ingest.py` |
+| 上传到 115 库、本地释放 | 官方插件 `cloud-115` + 主程序编排 | `plugins/cloud-115/cloud_115/backend.py`（`upload_part`、`rapid_upload_hashes=("sha1",)`）；`services/drives/uploads.py`（主根在网盘的库逐个上传）；`release.py`（`keep_local`/做种门禁） |
+| 海报/NFO/字幕跟随上传 | 主程序 | `uploads.py` 的 `_sync_sidecars`、`LibraryCloudSidecar` |
+| 115 目录 → STRM | 官方插件 `p115-library` | `plugins/p115-library`（增量同步、图片/NFO/字幕跟随） |
+| Emby 扫 STRM | Emby 本身 | 读本地 NFO/图片或在线刮 |
+
+所以本仓库的 `p115-download` 插件在这条路线上是**多余的**：它做的是「订阅直接把磁力投给 115」，
+会跳过「本地硬链接 + 本地刮削」这一步，和你要求的流程相反。它保留只当作可选能力
+（例如没有 PT 站、只有磁力资源的情况）。
+
 ## 常见问题
 
 | 现象 | 原因与处理 |
