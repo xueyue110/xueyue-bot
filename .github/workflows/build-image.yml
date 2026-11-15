@@ -1,0 +1,52 @@
+name: build-image
+
+# 用本仓库的 Actions 从上游 MovieClaw 源码构建镜像并推到 ghcr.io。
+# 手动触发：Actions → build-image → Run workflow，填上游 tag（例如 v0.50.0）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "上游 MovieClaw tag（例如 v0.50.0）"
+        required: true
+        default: "v0.50.0"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout upstream MovieClaw at ${{ inputs.ref }}
+        uses: actions/checkout@v4
+        with:
+          repository: movieclaw/MovieClaw
+          ref: ${{ inputs.ref }}
+          path: src
+
+      - name: Set up QEMU (arm64)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: src
+          file: src/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/movieclaw:${{ inputs.ref }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.upstream=movieclaw/MovieClaw@${{ inputs.ref }}

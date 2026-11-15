@@ -12,7 +12,7 @@ name: xueyue-bot
 
 services:
   movieclaw:
-    image: movieclaw/movieclaw:${MOVIECLAW_TAG:-latest}
+    image: ${MOVIECLAW_IMAGE:-movieclaw/movieclaw}:${MOVIECLAW_TAG:-v0.50.0}
     container_name: movieclaw
     init: true
     restart: unless-stopped
