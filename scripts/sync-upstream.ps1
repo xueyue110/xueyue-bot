@@ -24,6 +24,7 @@ $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $EnvFile  = Join-Path $RepoRoot 'compose/.env'
+$ExampleFile = Join-Path $RepoRoot 'compose/.env.example'
 $LogFile  = Join-Path $RepoRoot 'docs/UPSTREAM-LOG.md'
 
 function Write-Step([string]$Msg) { Write-Host "==> $Msg" -ForegroundColor Cyan }
@@ -52,6 +53,7 @@ function Get-LatestRelease {
 # ---------- 1. 当前固定版本 ----------
 $envText = ''
 if (Test-Path $EnvFile) { $envText = Get-Content $EnvFile -Raw -Encoding UTF8 }
+elseif (Test-Path $ExampleFile) { $envText = Get-Content $ExampleFile -Raw -Encoding UTF8 }
 $current = 'latest'
 if ($envText -match '(?m)^MOVIECLAW_TAG=(.+)$') { $current = $Matches[1].Trim() }
 Write-Step "当前 MOVIECLAW_TAG: $current"
