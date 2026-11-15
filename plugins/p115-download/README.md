@@ -47,6 +47,34 @@ PT 资源继续用 qBittorrent，两种下载器可以同时存在，按订阅/�
 在本地 STRM 目录写出 `.strm` 并通知 MovieClaw 扫库：订阅按「库里有」关单，
 Emby 直接读 STRM 播放（302 直链，不落本地盘）。
 
+## 待刮削目录自动整理（v0.2.0）
+
+除了下载器，插件还带一个「转存即刮削」循环：115 里指定一个待刮削目录，任何手段
+（离线、分享转存、手动上传）放进去的新条目，会被自动识别、移入媒体库目录并触发扫描。
+
+配置（MovieClaw 容器的环境变量）：
+
+```yaml
+environment:
+  - P115_WATCH_COOKIE=UID=…; CID=…; SEID=…; KID=…   # 115 Cookie
+  - P115_WATCH_STAGING=/媒体/待刮削                   # 115 网盘里的待刮削目录
+  - P115_WATCH_INTERVAL=300                          # 轮询秒数，最小 30
+```
+
+流程（每个 tick）：
+
+1. 列待刮削目录，取新条目（目录或单文件）
+2. 按名字推断 movie/tv，调宿主 `dl.resolve-target` 识别
+3. 认不住（not_found/ambiguous）→ **不移动**，只记日志，等人工处理
+4. 认住 → 在媒体库云目录下建条目目录，把条目移进去
+5. 对目标目录调 `library.scan.start`（`cloud_paths` 只扫这一处）→ 刮削入账
+6. p115-library 增量同步出 STRM
+
+权限（插件清单已声明）：`dl.resolve-target`、`library.scan.start`。
+
+限制：识别后不重命名文件（沿用发布名，识别靠 NER/解析）；已处理条目记在内存，
+插件重启后会重扫一遍（条目不在了就自然跳过）；不支持分级/多级子目录混合投放。
+
 ## 安全
 
 - Cookie 存在下载器配置的密码字段里，和 qBittorrent 密码同一处，按 MovieClaw 的下载器配置存储；

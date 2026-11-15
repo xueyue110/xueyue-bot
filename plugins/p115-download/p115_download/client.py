@@ -273,3 +273,45 @@ class Client115:
             else:
                 cid = await self._mkdir(cid, part)
         return cid
+
+    async def resolve_dir(self, rel_path: str) -> int | str:
+        """只查找、不创建；找不到抛 NotFound。"""
+        cid: int | str = "0"
+        for part in [p for p in rel_path.split("/") if p]:
+            dirs = await self._list_dirs(cid)
+            if part not in dirs:
+                raise NotFound(f"115 目录不存在：{part}")
+            cid = dirs[part]
+        return cid
+
+    async def list_entries(self, cid) -> list[dict]:
+        """列一个目录下的条目（目录与文件都返回）。"""
+        data = await self._request(
+            f"{self._base_files}/files",
+            params={"aid": 1, "cid": cid, "show_dir": 1, "limit": 1150, "offset": 0},
+        )
+        items = data.get("data") or []
+        if isinstance(items, dict):
+            items = items.get("list") or []
+        entries: list[dict] = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if "cid" in item and "fid" not in item:
+                entries.append({"id": str(item["cid"]), "name": item.get("n") or item.get("name") or "", "is_dir": True, "size": 0})
+            else:
+                entries.append(
+                    {
+                        "id": str(item.get("fid") or item.get("f") or ""),
+                        "name": item.get("n") or item.get("name") or "",
+                        "is_dir": False,
+                        "size": _as_int(item.get("s") or item.get("size")) or 0,
+                    }
+                )
+        return [entry for entry in entries if entry["name"] and entry["id"]]
+
+    async def move(self, remote_ids: list[str], parent_id) -> None:
+        """把一批文件/目录移动到目标目录。"""
+        payload = {f"fid[{i}]": rid for i, rid in enumerate(remote_ids)}
+        payload["pid"] = str(parent_id)
+        await self._request(f"{self._base_files}/files/move", method="POST", data=payload)

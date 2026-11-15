@@ -19,6 +19,8 @@ class Fake115:
     def __init__(self) -> None:
         self.tasks: dict[str, dict] = {}
         self.dirs: dict[str, dict[str, str]] = {"0": {}}
+        #: cid → {fid: {"name","size"}}
+        self.files: dict[str, dict[str, dict]] = {}
         self._next_cid = 1000
         self.calls: list[tuple[str, str]] = []
         #: 设为 {"state": False, "code": 40101017} 等，模拟 115 拒绝
@@ -37,6 +39,16 @@ class Fake115:
 
     def fail(self, info_hash: str) -> None:
         self.tasks[info_hash]["status"] = "failed"
+
+    def add_dir(self, name: str, parent: str = "0") -> str:
+        cid = str(self._next_cid)
+        self._next_cid += 1
+        self.dirs.setdefault(parent, {})[name] = cid
+        self.dirs.setdefault(cid, {})
+        return cid
+
+    def add_file(self, cid: str, fid: str, name: str, size: int = 1024) -> None:
+        self.files.setdefault(cid, {})[fid] = {"name": name, "size": size}
 
     # ------------------------------------------------------------------ 传输
 
@@ -67,7 +79,32 @@ class Fake115:
                 {"cid": child_cid, "n": name, "pid": cid}
                 for name, child_cid in self.dirs.get(cid, {}).items()
             ]
+            items += [
+                {"fid": fid, "n": info["name"], "s": info["size"], "pid": cid}
+                for fid, info in self.files.get(cid, {}).items()
+            ]
             return self._json({"state": True, "data": items})
+
+        if host == "webapi.115.com" and path == "/files/move":
+            pid = form.get("pid", "0")
+            fids = [value for key, value in form.items() if key.startswith("fid[")]
+            for fid in fids:
+                moved = False
+                for cid, bucket in self.files.items():
+                    if fid in bucket:
+                        info = bucket.pop(fid)
+                        self.files.setdefault(pid, {})[fid] = info
+                        moved = True
+                        break
+                if moved:
+                    continue
+                for parent, children in self.dirs.items():
+                    for name, child_cid in list(children.items()):
+                        if child_cid == fid:
+                            del children[name]
+                            self.dirs.setdefault(pid, {})[name] = child_cid
+                            break
+            return self._json({"state": True})
 
         if host == "webapi.115.com" and path == "/files/add":
             pid = form.get("pid", "0")
