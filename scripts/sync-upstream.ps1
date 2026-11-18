@@ -41,7 +41,16 @@ function Get-LatestRelease {
   }
   $out = git ls-remote --tags --refs https://github.com/movieclaw/movieclaw.git 2>$null
   if ($LASTEXITCODE -ne 0 -or -not $out) {
-    throw '取不到上游版本：GitHub API 与 git ls-remote 都失败了。检查网络或配置代理后重试。'
+    Write-Warning 'GitHub API 与 git 都不可达；改从 Docker Hub 镜像 tag 取最新版本。'
+    try {
+      $page = Invoke-RestMethod -Uri 'https://hub.docker.com/v2/repositories/movieclaw/movieclaw/tags?page_size=50&ordering=last_updated' -Headers $headers -TimeoutSec 25
+      $tags = $page.results | ForEach-Object { $_.name } | Where-Object { $_ -match '^v?\d+\.\d+\.\d+$' }
+      if (-not $tags) { throw 'Docker Hub 上没有找到语义化版本 tag' }
+      $latest = $tags | Sort-Object { [version]($_ -replace '^v', '') } | Select-Object -Last 1
+      return [pscustomobject]@{ Tag = $latest; Notes = '（来自 Docker Hub tag，GitHub 暂不可达）'; At = $null }
+    } catch {
+      throw '取不到上游版本：GitHub API / git / Docker Hub 都失败了。检查网络或配置代理后重试。'
+    }
   }
   $tags = $out | ForEach-Object { ($_ -split "`t")[1] -replace '^refs/tags/', '' } |
           Where-Object { $_ -match '^v?\d+\.\d+\.\d+$' }

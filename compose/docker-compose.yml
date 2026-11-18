@@ -1,4 +1,4 @@
-name: xueyue-bot
+﻿name: xueyue-bot
 
 # MovieClaw + qBittorrent（PT 下载）+ Emby（可选，读 STRM）
 # 115 网盘不在这里起容器：走 MovieClaw 官方插件（cloud-115 / p115-import / p115-library），
@@ -12,7 +12,7 @@ name: xueyue-bot
 
 services:
   movieclaw:
-    image: ${MOVIECLAW_IMAGE:-movieclaw/movieclaw}:${MOVIECLAW_TAG:-v0.50.0}
+    image: ${MOVIECLAW_IMAGE:-movieclaw/movieclaw}:${MOVIECLAW_TAG:-v0.51.0}
     container_name: movieclaw
     init: true
     restart: unless-stopped
